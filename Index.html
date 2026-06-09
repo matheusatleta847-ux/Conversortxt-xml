@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor TXT → XML | Amazon Seller Central</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 40px 36px;
+      max-width: 540px;
+      width: 100%;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .logo-icon {
+      background: #ff9900;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-text h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .logo-text p {
+      font-size: 12px;
+      color: #888;
+      margin-top: 1px;
+    }
+
+    .drop-zone {
+      border: 2px dashed #d0d7de;
+      border-radius: 10px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 22px;
+      background: #fafbfc;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #ff9900;
+      background: #fff8ee;
+    }
+
+    .drop-zone .icon {
+      font-size: 38px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .drop-zone p {
+      color: #555;
+      font-size: 14px;
+    }
+
+    .drop-zone .hint {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 6px;
+    }
+
+    #fileInput { display: none; }
+
+    .file-selected {
+      background: #eaf6ec;
+      border-color: #57a86e;
+      padding: 14px 20px;
+    }
+
+    .file-selected .icon { font-size: 22px; margin-bottom: 4px; }
+    .file-selected .filename {
+      font-weight: 600;
+      color: #2d6a4f;
+      font-size: 14px;
+      word-break: break-all;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: #ff9900;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn:hover:not(:disabled) { background: #e08800; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status {
+      margin-top: 18px;
+      min-height: 24px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .status.loading { color: #888; }
+    .status.error   { color: #c0392b; font-weight: 600; }
+    .status.success { color: #27ae60; font-weight: 600; }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ccc;
+      border-top-color: #ff9900;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .info {
+      margin-top: 28px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px 18px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    .info strong { color: #333; }
+
+    .footer {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">TX</div>
+    <div class="logo-text">
+      <h1>Conversor TXT → XML</h1>
+      <p>Amazon Seller Central · DocBook</p>
+    </div>
+  </div>
+
+  <div class="drop-zone" id="dropZone">
+    <span class="icon">📄</span>
+    <p>Arraste o arquivo <strong>.txt</strong> aqui</p>
+    <p class="hint">ou clique para selecionar</p>
+    <input type="file" id="fileInput" accept=".txt" />
+  </div>
+
+  <button class="btn" id="convertBtn" disabled>Converter e Baixar XML</button>
+
+  <div class="status" id="status"></div>
+
+  <div class="info">
+    <strong>Como funciona:</strong><br>
+    1. Selecione o arquivo <code>.txt</code> exportado do Seller Central<br>
+    2. Clique em <em>Converter</em><br>
+    3. O arquivo <code>.xml</code> no formato DocBook será baixado automaticamente
+  </div>
+</div>
+
+<div class="footer">Processamento feito no servidor · Nenhum dado armazenado</div>
+
+<script>
+  const dropZone   = document.getElementById('dropZone');
+  const fileInput  = document.getElementById('fileInput');
+  const convertBtn = document.getElementById('convertBtn');
+  const status     = document.getElementById('status');
+
+  let selectedFile = null;
+
+  // Click to browse
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  // Drag events
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  function setFile(file) {
+    if (!file.name.endsWith('.txt')) {
+      setStatus('error', '⚠️ Selecione um arquivo .txt');
+      return;
+    }
+    selectedFile = file;
+    dropZone.classList.add('file-selected');
+    dropZone.innerHTML = `
+      <span class="icon">✅</span>
+      <p class="filename">${file.name}</p>
+      <p class="hint">${(file.size / 1024).toFixed(1)} KB · clique para trocar</p>
+      <input type="file" id="fileInput" accept=".txt" style="display:none" />
+    `;
+    // re-bind inner input
+    dropZone.querySelector('input').addEventListener('change', e => {
+      if (e.target.files[0]) setFile(e.target.files[0]);
+    });
+    convertBtn.disabled = false;
+    setStatus('', '');
+  }
+
+  convertBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    convertBtn.disabled = true;
+    setStatus('loading', '<span class="spinner"></span> Convertendo…');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const res = await fetch('/api/converter', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const originalName = selectedFile.name.replace(/\.txt$/i, '');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = originalName + '.xml';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setStatus('success', '✅ XML gerado e baixado com sucesso!');
+    } catch (err) {
+      setStatus('error', '❌ ' + err.message);
+    } finally {
+      convertBtn.disabled = false;
+    }
+  });
+
+  function setStatus(type, html) {
+    status.className = 'status ' + type;
+    status.innerHTML = html;
+  }
+</script>
+</body>
+</html>
